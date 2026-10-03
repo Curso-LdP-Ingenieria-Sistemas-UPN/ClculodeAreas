@@ -5,11 +5,12 @@
 package calculodeareas;
 import java.util.Scanner;
 
-// Clase abstracta base
-abstract class Figura {
-    private String nombre;
+// --- DOMINIO / MODELO POO ---
 
-    public Figura(String nombre) {
+abstract class FiguraGeometrica {
+    private final String nombre;
+
+    protected FiguraGeometrica(String nombre) {
         this.nombre = nombre;
     }
 
@@ -17,13 +18,11 @@ abstract class Figura {
         return nombre;
     }
 
-    // Método abstracto que cada figura debe implementar
     public abstract double calcularArea();
 }
 
-// Subclase Círculo
-class Circulo extends Figura {
-    private double radio;
+class Circulo extends FiguraGeometrica {
+    private final double radio;
 
     public Circulo(double radio) {
         super("Círculo");
@@ -32,14 +31,13 @@ class Circulo extends Figura {
 
     @Override
     public double calcularArea() {
-        return Math.PI * Math.pow(radio, 2);
+        return Math.PI * radio * radio;
     }
 }
 
-// Subclase Rectángulo
-class Rectangulo extends Figura {
-    private double base;
-    private double altura;
+class Rectangulo extends FiguraGeometrica {
+    private final double base;
+    private final double altura;
 
     public Rectangulo(double base, double altura) {
         super("Rectángulo");
@@ -53,10 +51,9 @@ class Rectangulo extends Figura {
     }
 }
 
-// Subclase Triángulo
-class Triangulo extends Figura {
-    private double base;
-    private double altura;
+class Triangulo extends FiguraGeometrica {
+    private final double base;
+    private final double altura;
 
     public Triangulo(double base, double altura) {
         super("Triángulo");
@@ -70,67 +67,105 @@ class Triangulo extends Figura {
     }
 }
 
-// Clase Principal
+// --- SERVICIO DE ENTRADA / SALIDA (MODULARIDAD) ---
+
+class ConsolaInput {
+    private final Scanner scanner;
+
+    public ConsolaInput(Scanner scanner) {
+        this.scanner = scanner;
+    }
+
+    public int solicitarOpcionMenu() {
+        System.out.print("Opción: ");
+        while (!scanner.hasNextInt()) {
+            System.out.print("Ingrese un número válido: ");
+            scanner.next();
+        }
+        return scanner.nextInt();
+    }
+
+    public double solicitarDimension(String mensaje) {
+        double valor;
+        do {
+            System.out.print(mensaje);
+            while (!scanner.hasNextDouble()) {
+                System.out.print("Entrada inválida. Ingrese un número: ");
+                scanner.next();
+            }
+            valor = scanner.nextDouble();
+            if (valor <= 0) {
+                System.out.println("El valor debe ser mayor a 0.");
+            }
+        } while (valor <= 0);
+        return valor;
+    }
+}
+
+// --- CLASE PRINCIPAL ---
+
 public class CALCULOdeAREAS {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        boolean salir = false;
+        ConsolaInput input = new ConsolaInput(scanner);
+        boolean continuarEjecucion = true;
 
-        System.out.println("=== PROGRAMA CÁLCULO DE ÁREAS ===");
+        mostrarEncabezado();
 
-        while (!salir) {
-            System.out.println("\nSeleccione la figura geométrica:");
-            System.out.println("1. Círculo");
-            System.out.println("2. Rectángulo");
-            System.out.println("3. Triángulo");
-            System.out.println("4. Salir");
-            System.out.print("Opción: ");
+        while (continuarEjecucion) {
+            mostrarMenu();
+            int opcion = input.solicitarOpcionMenu();
 
-            int opcion = scanner.nextInt();
-            Figura figura = null;
-
-            switch (opcion) {
-                case 1:
-                    System.out.print("Ingrese el radio del círculo: ");
-                    double radio = scanner.nextDouble();
-                    figura = new Circulo(radio);
-                    break;
-
-                case 2:
-                    System.out.print("Ingrese la base del rectángulo: ");
-                    double baseR = scanner.nextDouble();
-                    System.out.print("Ingrese la altura del rectángulo: ");
-                    double alturaR = scanner.nextDouble();
-                    figura = new Rectangulo(baseR, alturaR);
-                    break;
-
-                case 3:
-                    System.out.print("Ingrese la base del triángulo: ");
-                    double baseT = scanner.nextDouble();
-                    System.out.print("Ingrese la altura del triángulo: ");
-                    double alturaT = scanner.nextDouble();
-                    figura = new Triangulo(baseT, alturaT);
-                    break;
-
-                case 4:
-                    salir = true;
-                    System.out.println("¡Gracias por usar el programa!");
-                    continue;
-
-                default:
-                    System.out.println("Opción no válida. Intente de nuevo.");
-                    continue;
+            if (opcion == 4) {
+                continuarEjecucion = false;
+                System.out.println("\n¡Gracias por usar el programa!");
+                break;
             }
 
-            // Polimorfismo en acción: llama al método de la instancia concreta
-            mostrarResultado(figura);
+            FiguraGeometrica figura = crearFiguraSegunOpcion(opcion, input);
+            if (figura != null) {
+                imprimirResultado(figura);
+            } else {
+                System.out.println("Opción no válida. Intente de nuevo.");
+            }
         }
 
         scanner.close();
     }
 
-    private static void mostrarResultado(Figura figura) {
-        System.out.printf("El área del %s es: %.2f\n", figura.getNombre(), figura.calcularArea());
+    private static void mostrarEncabezado() {
+        System.out.println("=================================");
+        System.out.println("    CÁLCULO DE ÁREAS - POO      ");
+        System.out.println("=================================");
+    }
+
+    private static void mostrarMenu() {
+        System.out.println("\nSeleccione la figura geométrica:");
+        System.out.println("1. Círculo");
+        System.out.println("2. Rectángulo");
+        System.out.println("3. Triángulo");
+        System.out.println("4. Salir");
+    }
+
+    private static FiguraGeometrica crearFiguraSegunOpcion(int opcion, ConsolaInput input) {
+        return switch (opcion) {
+            case 1 -> new Circulo(
+                input.solicitarDimension("Ingrese el radio del círculo: ")
+            );
+            case 2 -> new Rectangulo(
+                input.solicitarDimension("Ingrese la base del rectángulo: "),
+                input.solicitarDimension("Ingrese la altura del rectángulo: ")
+            );
+            case 3 -> new Triangulo(
+                input.solicitarDimension("Ingrese la base del triángulo: "),
+                input.solicitarDimension("Ingrese la altura del triángulo: ")
+            );
+            default -> null;
+        };
+    }
+
+    private static void imprimirResultado(FiguraGeometrica figura) {
+        System.out.printf("-> El área del %s es: %.2f\n", figura.getNombre(), figura.calcularArea());
     }
 }
